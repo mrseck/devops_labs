@@ -1,0 +1,120 @@
+---
+# Secret pour les credentials PostgreSQL
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: random-db
+  labels:
+    app: random
+    component: database
+type: Opaque
+stringData:
+  POSTGRES_DB: "randomdb"
+  POSTGRES_USER: "randomuser"
+  POSTGRES_PASSWORD: "RandomPass2024!"
+
+---
+# Déploiement PostgreSQL
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: random-db
+  labels:
+    app: random
+    component: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate  # Important : évite les corruptions de données
+  selector:
+    matchLabels:
+      app: random
+      component: database
+  template:
+    metadata:
+      labels:
+        app: random
+        component: database
+    spec:
+      serviceAccountName: random-db-sa
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - secretRef:
+            name: postgres-secret
+        env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+        volumeMounts:
+        - name: postgres-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            cpu: "400m"
+            memory: "800Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - pg_isready -U $POSTGRES_USER -d $POSTGRES_DB
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
+      volumes:
+      - name: postgres-data
+        persistentVolumeClaim:
+          claimName: postgres-data-pvc  # ← C'EST ÇA QUI VA BINDER LE PVC !
+
+---
+# Service pour exposer PostgreSQL en interne
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: random-db
+  labels:
+    app: random
+    component: database
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5432
+    targetPort: 5432
+    protocol: TCP
+    name: postgres
+  selector:
+    app: random
+    component: database

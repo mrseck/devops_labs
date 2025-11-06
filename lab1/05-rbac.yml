@@ -1,0 +1,300 @@
+---
+# RANDOM-BACKEND - Lecture seule
+
+# ServiceAccount pour random-backend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: random-backend-sa
+  namespace: random-backend
+  labels:
+    env: production
+    app: random
+    component: backend
+
+---
+# Role pour random-backend : lecture seule
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-backend-role
+  namespace: random-backend
+  labels:
+    env: production
+    app: random
+    component: backend
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding pour random-backend
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-backend-rolebinding
+  namespace: random-backend
+  labels:
+    env: production
+    app: random
+    component: backend
+subjects:
+- kind: ServiceAccount
+  name: random-backend-sa
+  namespace: random-backend
+roleRef:
+  kind: Role
+  name: random-backend-role
+  apiGroup: rbac.authorization.k8s.io
+
+
+---
+# RANDOM-JOBS - Gestion des Jobs
+
+# ServiceAccount pour random-jobs
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: random-jobs-sa
+  namespace: random-jobs
+  labels:
+    env: production
+    app: random
+    component: jobs
+
+---
+# Role pour random-jobs : création/suppression de Jobs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-jobs-role
+  namespace: random-jobs
+  labels:
+    env: production
+    app: random
+    component: jobs
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding pour random-jobs
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-jobs-rolebinding
+  namespace: random-jobs
+  labels:
+    env: production
+    component: jobs
+    app: random
+subjects:
+- kind: ServiceAccount
+  name: random-jobs-sa
+  namespace: random-jobs
+roleRef:
+  kind: Role
+  name: random-jobs-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# RANDOM-SCHEDULER - Permissions étendues
+
+# ServiceAccount pour random-scheduler
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: random-scheduler-sa
+  namespace: random-scheduler
+  labels:
+    env: production
+    app: random
+    component: scheduler
+---
+# Role dans random-scheduler (gestion locale)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-scheduler-role
+  namespace: random-scheduler
+  labels:
+    env: production
+    app: random
+    component: scheduler
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding dans random-scheduler
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-scheduler-rolebinding
+  namespace: random-scheduler
+  labels:
+    env: production
+    app: random
+    component: scheduler
+subjects:
+- kind: ServiceAccount
+  name: random-scheduler-sa
+  namespace: random-scheduler
+roleRef:
+  kind: Role
+  name: random-scheduler-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# Role dans random-jobs (pour orchestrer les jobs)
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-scheduler-jobs-role
+  namespace: random-jobs
+  labels:
+    env: production
+    component: scheduler
+    app: random
+rules:
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["create", "delete", "get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding dans random-jobs pour le scheduler
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-scheduler-jobs-rolebinding
+  namespace: random-jobs
+  labels:
+    env: production
+    app: random
+    component: scheduler
+subjects:
+- kind: ServiceAccount
+  name: random-scheduler-sa
+  namespace: random-scheduler
+roleRef:
+  kind: Role
+  name: random-scheduler-jobs-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# RANDOM-FRONTEND - Lecture minimale
+
+# ServiceAccount pour random-frontend
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: random-frontend-sa
+  namespace: random-frontend
+  labels:
+    env: production
+    app: random
+    component: frontend
+
+---
+# Role pour random-frontend : lecture minimale
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-frontend-role
+  namespace: random-frontend
+  labels:
+    env: production
+    app: random
+    component: frontend
+rules:
+- apiGroups: [""]
+  resources: ["services", "configmaps"]
+  verbs: ["get", "list"]
+
+---
+# RoleBinding pour random-frontend
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-frontend-rolebinding
+  namespace: random-frontend
+  labels:
+    env: production
+    app: random
+    component: frontend
+subjects:
+- kind: ServiceAccount
+  name: random-frontend-sa
+  namespace: random-frontend
+roleRef:
+  kind: Role
+  name: random-frontend-role
+  apiGroup: rbac.authorization.k8s.io
+
+---
+# RANDOM-DB - Lecture secrets uniquement
+
+# ServiceAccount pour random-db
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: random-db-sa
+  namespace: random-db
+  labels:
+    env: production
+    app: random
+    component: database
+
+---
+# Role pour random-db : lecture sur secrets uniquement
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: random-db-role
+  namespace: random-db
+  labels:
+    env: production
+    app: random
+    component: database
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch"]
+
+---
+# RoleBinding pour random-db
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: random-db-rolebinding
+  namespace: random-db
+  labels:
+    env: production
+    app: random
+    component: database
+subjects:
+- kind: ServiceAccount
+  name: random-db-sa
+  namespace: random-db
+roleRef:
+  kind: Role
+  name: random-db-role
+  apiGroup: rbac.authorization.k8s.io

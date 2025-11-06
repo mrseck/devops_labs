@@ -1,0 +1,447 @@
+---
+# Politique par défaut : Bloquer tout le trafic entrant dans random-db
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: random-db
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Politique par défaut : Bloquer tout le trafic sortant dans random-db
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-egress
+  namespace: random-db
+spec:
+  podSelector: {}
+  policyTypes:  
+  - Egress
+
+---
+# Autoriser random-db à accepter le trafic des namespaces random-backend et random-jobs via le port 5432
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-from-backend-and-jobs
+  namespace: random-db
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          component: backend
+    ports:
+    - protocol: TCP
+      port: 5432
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          component: jobs
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Autoriser random-db à répondre aux requêtes des namespaces random-backend et random-jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-egress-responses
+  namespace: random-db
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: backend
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: jobs
+
+---
+# Politique par défaut : Bloquer tout le trafic entrant dans random-backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: random-backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Politique par défaut : Bloquer tout le trafic sortant de random-backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-egress
+  namespace: random-backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+
+---
+# Autoriser random-backend à accepter le trafic des namespaces random-frontend via le port 8080
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-from-frontend
+  namespace: random-backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          component: frontend
+    ports:
+    - protocol: TCP
+      port: 8080
+
+
+---
+# Autoriser random-backend à accéder à random-db sur le port 5432
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-to-database
+  namespace: random-backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: database
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Politique par défaut : Bloquer tout le trafic entrant dans random-jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: random-jobs
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Politique par défaut : Bloquer tout le trafic sortant de random-jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-egress
+  namespace: random-jobs
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+
+---
+# Autoriser random-job à accepter le trafic de random-scheduler 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-jobs-from-scheduler
+  namespace: random-jobs
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          component: scheduler
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+# Autoriser random-scheduler à accéder à random-jobs 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-scheduler-to-jobs
+  namespace: random-scheduler
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: jobs
+    ports:
+    - protocol: TCP
+      port: 8080
+
+---
+# Autoriser random-jobs à accéder à random-database via le port 5432
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-jobs-to-database
+  namespace: random-jobs
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: database
+    ports:
+    - protocol: TCP
+      port: 5432
+
+---
+# Politique par défaut : Bloquer tout le trafic entrant dans random-frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: random-frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Politique par défaut : Bloquer tout le trafic sortant de random-frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-egress
+  namespace: random-frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+
+---
+# Autoriser random-frontend à accéder à random-backend via le port 8080
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-frontend-to-backend
+  namespace: random-frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          component: backend
+    ports:
+    - protocol: TCP
+      port: 8080
+
+
+---
+# Autoriser le trafic externe vers random-frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-external-to-frontend
+  namespace: random-frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  ingress:
+  - ports:
+    - protocol: TCP
+      port: 80
+    - protocol: TCP
+      port: 443
+
+---
+# Politique par défaut : Bloquer tout le trafic entrant dans random-scheduler
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-ingress
+  namespace: random-scheduler
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+
+---
+# Politique par défaut : Bloquer tout le trafic sortant de random-scheduler
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all-egress
+  namespace: random-scheduler
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+
+---
+# Autoriser random-scheduler à accéder à l'API Kubernetes
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-scheduler-to-k8s-api
+  namespace: random-scheduler
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          component: apiserver
+    ports:
+    - protocol: TCP
+      port: 443
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: default
+    ports:
+    - protocol: TCP
+      port: 443
+
+
+
+---
+# Autoriser le trafic DNS pour random-backend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: random-backend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Autoriser le trafic DNS pour random-jobs
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: random-jobs
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Autoriser le trafic DNS pour random-db
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: random-db
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Autoriser le trafic DNS pour random-frontend
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: random-frontend
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+
+---
+# Autoriser le trafic DNS pour random-scheduler
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: random-scheduler
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53

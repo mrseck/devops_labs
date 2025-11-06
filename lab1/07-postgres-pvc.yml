@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data-pvc
+  namespace: random-db
+  labels:
+    app: random
+    component: database
+  annotations:
+    description: "PostgreSQL data volume with LOCAL storage expansion"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: random-db-expandable
+  resources:
+    requests:
+      storage: 10Gi

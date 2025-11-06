@@ -1,0 +1,176 @@
+---
+# Backend de test (écoute sur port 8080)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-backend
+  namespace: random-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-backend
+  template:
+    metadata:
+      labels:
+        app: test-backend
+    spec:
+      containers:
+      - name: backend
+        image: hashicorp/http-echo
+        args:
+          - "-text=Backend Response"
+          - "-listen=:8080"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: random-backend
+spec:
+  selector:
+    app: test-backend
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+# Database de test (écoute sur port 5432)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-db
+  namespace: random-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-db
+  template:
+    metadata:
+      labels:
+        app: test-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "testpass"
+        - name: POSTGRES_DB
+          value: "testdb"
+        ports:
+        - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: random-db
+spec:
+  selector:
+    app: test-db
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---
+# Jobs de test
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-jobs
+  namespace: random-jobs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-jobs
+  template:
+    metadata:
+      labels:
+        app: test-jobs
+    spec:
+      containers:
+      - name: jobs
+        image: nicolaka/netshoot
+        command: ["sleep", "3600"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jobs-service
+  namespace: random-jobs
+spec:
+  selector:
+    app: test-jobs
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+---
+# Frontend de test (écoute sur ports 80 et 443)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-frontend
+  namespace: random-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-frontend
+  template:
+    metadata:
+      labels:
+        app: test-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  namespace: random-frontend
+spec:
+  type: NodePort
+  selector:
+    app: test-frontend
+  ports:
+  - name: http
+    protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  - name: https
+    protocol: TCP
+    port: 443
+    targetPort: 80
+    nodePort: 30443
+---
+# Scheduler de test
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: test-scheduler
+  namespace: random-scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-scheduler
+  template:
+    metadata:
+      labels:
+        app: test-scheduler
+    spec:
+      containers:
+      - name: scheduler
+        image: nicolaka/netshoot
+        command: ["sleep", "3600"]

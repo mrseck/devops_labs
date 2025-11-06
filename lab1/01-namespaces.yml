@@ -1,0 +1,65 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: random-backend
+  labels:
+    env: production
+    app: random
+    component: backend
+  annotations:
+    description: "Backend API services for Random application"
+    contact: "backend-team@random.com"
+    
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: random-jobs
+  labels:
+    env: production
+    app: random
+    component: jobs
+  annotations:
+    description: "Spark jobs and batch processing for Random application"
+    contact: "data-team@random.com"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: random-db
+  labels:
+    env: production
+    app: random
+    component: database
+  annotations:
+    description: "PostgreSQL database for Random application"
+    contact: "database-team@random.com"
+    alert: "CRITICAL - Monitor PVC saturation to prevent service interruption"
+    
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: random-frontend
+  labels:
+    env: production
+    app: random
+    component: frontend
+  annotations:
+    description: "Frontend web application for Random"
+    contact: "frontend-team@random.com"
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: random-scheduler
+  labels:
+    env: production
+    app: random
+    component: scheduler
+  annotations:
+    description: "Job scheduler and orchestrator for Random application"
+    contact: "platform-team@random.com"
