@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres-pvc-monitor
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: monitoring
+    lab: lab2
+    team: monitoring
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: postgresql
+      component: monitoring
+  namespaceSelector:
+    matchNames:
+    - random-db
+  endpoints:
+  - port: metrics
+    interval: 15s
+    scrapeTimeout: 10s
+    path: /metrics
+    scheme: http

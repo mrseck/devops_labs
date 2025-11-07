@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-metrics
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: monitoring
+    lab: lab2
+spec:
+  ports:
+    - port: 9090
+      targetPort: 9090
+      name: metrics
+  selector:
+    app: postgresql
+    component: database
+  type: ClusterIP
+

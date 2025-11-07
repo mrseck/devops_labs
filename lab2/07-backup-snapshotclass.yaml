@@ -1,0 +1,11 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: postgres-snapshot-class
+  labels:
+    app: postgresql
+    component: backup
+    lab: lab2
+driver: local-path  # Adapter selon votre environnement
+deletionPolicy: Retain
+

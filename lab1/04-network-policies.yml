@@ -334,7 +334,30 @@ spec:
     - protocol: TCP
       port: 443
 
-
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-prometheus-scrape
+  namespace: random-db
+spec:
+  podSelector:
+    matchLabels:
+      app: postgresql
+      component: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: default
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 9090
 
 ---
 # Autoriser le trafic DNS pour random-backend

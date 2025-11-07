@@ -1,0 +1,14 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: postgres-snapshot-$(date +%Y%m%d)
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: backup
+    lab: lab2
+spec:
+  volumeSnapshotClassName: postgres-snapshot-class
+  source:
+    persistentVolumeClaimName: postgres-data
+

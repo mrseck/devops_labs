@@ -1,0 +1,133 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: postgres-pvc-alerts
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: monitoring
+    lab: lab2
+    prometheus: default
+spec:
+  groups:
+    - name: postgres_pvc_alerts
+      interval: 30s
+      rules:
+        - alert: PVCUsageWarning
+          expr: |
+            pvc_usage_percent{
+              namespace="random-db"
+            } > 70
+          for: 5m
+          labels:
+            severity: warning
+            component: storage
+            namespace: random-db
+            alertname: PVCUsageWarning
+          annotations:
+            summary: "PVC PostgreSQL à 70% de capacité"
+            description: |
+              Le PVC de PostgreSQL dans le namespace {{ $labels.namespace }} 
+              est utilisé à {{ $value | printf "%.2f" }}% de sa capacité.
+              Espace utilisé: {{ with query "pvc_used_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              Capacité totale: {{ with query "pvc_capacity_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+            runbook_url: "https://wiki.example.com/runbook/pvc-warning"
+            dashboard_url: "https://grafana.example.com/d/pvc-monitoring"
+        
+        - alert: PVCUsageCritical
+          expr: |
+            pvc_usage_percent{
+              namespace="random-db"
+            } > 85
+          for: 2m
+          labels:
+            severity: critical
+            component: storage
+            namespace: random-db
+            alertname: PVCUsageCritical
+          annotations:
+            summary: "PVC PostgreSQL à 85% - Action urgente requise"
+            description: |
+              ⚠️ CRITIQUE: Le PVC de PostgreSQL dans le namespace {{ $labels.namespace }} 
+              est utilisé à {{ $value | printf "%.2f" }}% de sa capacité.
+              Action immédiate requise pour éviter une saturation.
+              
+              Espace utilisé: {{ with query "pvc_used_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              Capacité totale: {{ with query "pvc_capacity_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              
+              Actions recommandées:
+              - Étendre le PVC immédiatement
+              - Nettoyer les anciennes sauvegardes
+              - Vérifier les logs pour identifier la cause
+            runbook_url: "https://wiki.example.com/runbook/pvc-critical"
+            dashboard_url: "https://grafana.example.com/d/pvc-monitoring"
+        
+        - alert: PVCUsageEmergency
+          expr: |
+            pvc_usage_percent{
+              namespace="random-db"
+            } > 95
+          for: 1m
+          labels:
+            severity: emergency
+            component: storage
+            namespace: random-db
+            alertname: PVCUsageEmergency
+          annotations:
+            summary: "PVC PostgreSQL à 95% - Risque imminent d'interruption"
+            description: |
+              🚨 URGENCE: Le PVC de PostgreSQL dans le namespace {{ $labels.namespace }} 
+              est utilisé à {{ $value | printf "%.2f" }}% de sa capacité.
+              
+              Espace utilisé: {{ with query "pvc_used_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              Capacité totale: {{ with query "pvc_capacity_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              
+              ⚠️ RISQUE IMMINENT D'INTERRUPTION DES SERVICES ⚠️
+              
+              Actions IMMÉDIATES:
+              1. Étendre le PVC en urgence (kubectl patch pvc)
+              2. Activer le mode read-only sur PostgreSQL
+              3. Supprimer les données non critiques
+              4. Escalader vers l'équipe d'infrastructure
+            runbook_url: "https://wiki.example.com/runbook/pvc-emergency"
+            dashboard_url: "https://grafana.example.com/d/pvc-monitoring"
+        
+        - alert: PVCGrowthRate
+          expr: |
+            (
+              predict_linear(
+                pvc_used_bytes{
+                  namespace="random-db"
+                }[7d], 
+                7 * 24 * 3600
+              ) > 
+              pvc_capacity_bytes{
+                namespace="random-db"
+              }
+            ) and (
+              pvc_usage_percent{
+                namespace="random-db"
+              } > 50
+            )
+          for: 1h
+          labels:
+            severity: warning
+            component: storage
+            namespace: random-db
+            alertname: PVCGrowthRate
+          annotations:
+            summary: "Projection de saturation du PVC PostgreSQL dans moins de 7 jours"
+            description: |
+              📊 Analyse prédictive: Basé sur le taux de croissance des 7 derniers jours, 
+              le PVC de PostgreSQL dans le namespace {{ $labels.namespace }} 
+              devrait atteindre sa capacité maximale dans moins de 7 jours.
+              
+              Utilisation actuelle: {{ with query "pvc_used_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }} ({{ with query "pvc_usage_percent{namespace='" }}{{ . | first | value | printf "%.2f" }}%{{ end }})
+              Capacité totale: {{ with query "pvc_capacity_bytes{namespace='" }}{{ . | first | value | humanize1024 }}B{{ end }}
+              
+              Actions recommandées:
+              - Planifier l'extension du PVC
+              - Auditer la croissance des données
+              - Mettre en place une politique de rétention
+            runbook_url: "https://wiki.example.com/runbook/pvc-growth-rate"
+            dashboard_url: "https://grafana.example.com/d/pvc-monitoring"

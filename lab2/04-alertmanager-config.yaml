@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: alertmanager-config
+  namespace: random-db
+stringData:
+  alertmanager.yaml: |
+    global:
+      resolve_timeout: 5m
+    
+    route:
+      group_by: ['alertname', 'namespace']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 12h
+      receiver: 'default'
+      
+      routes:
+        - match:
+            severity: emergency
+          receiver: 'emergency-team'
+          group_wait: 0s
+          repeat_interval: 5m
+        
+        - match:
+            severity: critical
+          receiver: 'oncall-team'
+          group_wait: 30s
+          repeat_interval: 30m
+        
+        - match:
+            severity: warning
+          receiver: 'monitoring-team'
+          repeat_interval: 4h
+    
+    receivers:
+      - name: 'default'
+        webhook_configs:
+          - url: 'http://webhook-receiver:8080/alerts'
+      
+      - name: 'emergency-team'
+        slack_configs:
+          - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+            channel: '#incidents-critical'
+            title: '🚨 URGENCE: {{ .GroupLabels.alertname }}'
+      
+      - name: 'oncall-team'
+        slack_configs:
+          - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+            channel: '#alerts-oncall'
+      
+      - name: 'monitoring-team'
+        slack_configs:
+          - api_url: 'YOUR_SLACK_WEBHOOK_URL'
+            channel: '#monitoring'

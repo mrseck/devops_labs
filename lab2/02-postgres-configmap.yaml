@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: config
+    lab: lab2
+data:
+  POSTGRES_DB: "randomdb"
+  POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+  PGDATA: "/var/lib/postgresql/data/pgdata"
+  # Configuration PostgreSQL pour optimiser les performances
+  shared_buffers: "256MB"
+  effective_cache_size: "1GB"
+  maintenance_work_mem: "64MB"
+  checkpoint_completion_target: "0.9"
+  wal_buffers: "16MB"
+  default_statistics_target: "100"
+  random_page_cost: "1.1"
+  effective_io_concurrency: "200"
+  work_mem: "4MB"
+  min_wal_size: "1GB"
+  max_wal_size: "4GB"
+

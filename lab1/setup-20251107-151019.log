@@ -1,0 +1,220 @@
+[0;32m[✓ SUCCESS][0m ╔════════════════════════════════════════════════════════════════╗
+[0;32m[✓ SUCCESS][0m ║      SETUP NAMESPACES RANDOM - Infrastructure K8s              ║
+[0;32m[✓ SUCCESS][0m ╚════════════════════════════════════════════════════════════════╝
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 1/7: Vérification des prérequis[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;32m[✓ SUCCESS][0m kubectl est installé
+[0;32m[✓ SUCCESS][0m Connexion au cluster OK
+[0;32m[✓ SUCCESS][0m Tous les fichiers de configuration sont présents
+[0;34m[INFO][0m Cluster: minikube
+[0;34m[INFO][0m Version: N/A
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 2/7: Création des namespaces[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Création des namespaces avec labels et annotations
+namespace/random-backend unchanged
+namespace/random-jobs unchanged
+namespace/random-db configured
+namespace/random-frontend unchanged
+namespace/random-scheduler unchanged
+[0;32m[✓ SUCCESS][0m Création des namespaces avec labels et annotations - OK
+[0;32m[✓ SUCCESS][0m Namespace random-backend créé
+[0;32m[✓ SUCCESS][0m Namespace random-jobs créé
+[0;32m[✓ SUCCESS][0m Namespace random-db créé
+[0;32m[✓ SUCCESS][0m Namespace random-frontend créé
+[0;32m[✓ SUCCESS][0m Namespace random-scheduler créé
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 3/7: Application des ResourceQuotas[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Application des ResourceQuotas
+resourcequota/random-backend-quota unchanged
+resourcequota/random-jobs-quota unchanged
+resourcequota/random-db-quota unchanged
+resourcequota/random-frontend-quota unchanged
+resourcequota/random-scheduler-quota unchanged
+[0;32m[✓ SUCCESS][0m Application des ResourceQuotas - OK
+[0;34m[INFO][0m ResourceQuotas appliqués:
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 4/7: Application des LimitRanges[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Application des LimitRanges
+limitrange/random-backend-limits unchanged
+limitrange/random-jobs-limits unchanged
+limitrange/random-db-limits configured
+limitrange/random-frontend-limits unchanged
+limitrange/random-scheduler-limits unchanged
+[0;32m[✓ SUCCESS][0m Application des LimitRanges - OK
+[0;34m[INFO][0m LimitRanges appliqués:
+random-backend     random-backend-limits     2025-11-07T00:54:54Z
+random-db          random-db-limits          2025-11-07T00:54:54Z
+random-frontend    random-frontend-limits    2025-11-07T00:54:54Z
+random-jobs        random-jobs-limits        2025-11-07T00:54:54Z
+random-scheduler   random-scheduler-limits   2025-11-07T00:54:54Z
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 5/7: Application des NetworkPolicies[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Application des NetworkPolicies
+networkpolicy.networking.k8s.io/deny-all-ingress unchanged
+networkpolicy.networking.k8s.io/deny-all-egress unchanged
+networkpolicy.networking.k8s.io/allow-db-from-backend-and-jobs unchanged
+networkpolicy.networking.k8s.io/allow-db-egress-responses unchanged
+networkpolicy.networking.k8s.io/deny-all-ingress unchanged
+networkpolicy.networking.k8s.io/deny-all-egress unchanged
+networkpolicy.networking.k8s.io/allow-backend-from-frontend unchanged
+networkpolicy.networking.k8s.io/allow-egress-to-database unchanged
+networkpolicy.networking.k8s.io/deny-all-ingress unchanged
+networkpolicy.networking.k8s.io/deny-all-egress unchanged
+networkpolicy.networking.k8s.io/allow-jobs-from-scheduler unchanged
+networkpolicy.networking.k8s.io/allow-scheduler-to-jobs unchanged
+networkpolicy.networking.k8s.io/allow-jobs-to-database unchanged
+networkpolicy.networking.k8s.io/deny-all-ingress unchanged
+networkpolicy.networking.k8s.io/deny-all-egress unchanged
+networkpolicy.networking.k8s.io/allow-frontend-to-backend unchanged
+networkpolicy.networking.k8s.io/allow-external-to-frontend unchanged
+networkpolicy.networking.k8s.io/deny-all-ingress unchanged
+networkpolicy.networking.k8s.io/deny-all-egress unchanged
+networkpolicy.networking.k8s.io/allow-scheduler-to-k8s-api unchanged
+networkpolicy.networking.k8s.io/allow-dns-egress unchanged
+networkpolicy.networking.k8s.io/allow-dns-egress unchanged
+networkpolicy.networking.k8s.io/allow-dns-egress unchanged
+networkpolicy.networking.k8s.io/allow-dns-egress unchanged
+networkpolicy.networking.k8s.io/allow-dns-egress unchanged
+[0;32m[✓ SUCCESS][0m Application des NetworkPolicies - OK
+[0;34m[INFO][0m NetworkPolicies appliquées:
+random-backend     allow-backend-from-frontend      <none>         14h
+random-backend     allow-dns-egress                 <none>         14h
+random-backend     allow-egress-to-database         <none>         14h
+random-backend     deny-all-egress                  <none>         14h
+random-backend     deny-all-ingress                 <none>         14h
+random-db          allow-db-egress-responses        <none>         14h
+random-db          allow-db-from-backend-and-jobs   <none>         14h
+random-db          allow-dns-egress                 <none>         14h
+random-db          deny-all-egress                  <none>         14h
+random-db          deny-all-ingress                 <none>         14h
+random-frontend    allow-dns-egress                 <none>         14h
+random-frontend    allow-external-to-frontend       <none>         14h
+random-frontend    allow-frontend-to-backend        <none>         14h
+random-frontend    deny-all-egress                  <none>         14h
+random-frontend    deny-all-ingress                 <none>         14h
+random-jobs        allow-dns-egress                 <none>         14h
+random-jobs        allow-jobs-from-scheduler        <none>         14h
+random-jobs        allow-jobs-to-database           <none>         14h
+random-jobs        deny-all-egress                  <none>         14h
+random-jobs        deny-all-ingress                 <none>         14h
+random-scheduler   allow-dns-egress                 <none>         14h
+random-scheduler   allow-scheduler-to-jobs          <none>         14h
+random-scheduler   allow-scheduler-to-k8s-api       <none>         14h
+random-scheduler   deny-all-egress                  <none>         14h
+random-scheduler   deny-all-ingress                 <none>         14h
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 6/7: Configuration RBAC[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Configuration RBAC (ServiceAccounts, Roles, RoleBindings)
+serviceaccount/random-backend-sa unchanged
+role.rbac.authorization.k8s.io/random-backend-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-backend-rolebinding unchanged
+serviceaccount/random-jobs-sa unchanged
+role.rbac.authorization.k8s.io/random-jobs-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-jobs-rolebinding unchanged
+serviceaccount/random-scheduler-sa unchanged
+role.rbac.authorization.k8s.io/random-scheduler-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-scheduler-rolebinding unchanged
+role.rbac.authorization.k8s.io/random-scheduler-jobs-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-scheduler-jobs-rolebinding unchanged
+serviceaccount/random-frontend-sa unchanged
+role.rbac.authorization.k8s.io/random-frontend-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-frontend-rolebinding unchanged
+serviceaccount/random-db-sa unchanged
+role.rbac.authorization.k8s.io/random-db-role unchanged
+rolebinding.rbac.authorization.k8s.io/random-db-rolebinding unchanged
+[0;32m[✓ SUCCESS][0m Configuration RBAC (ServiceAccounts, Roles, RoleBindings) - OK
+[0;34m[INFO][0m ServiceAccounts créés:
+random-backend       default                                       0         14h
+random-backend       random-backend-sa                             0         14h
+random-db            default                                       0         14h
+random-db            random-db-sa                                  0         14h
+random-frontend      default                                       0         14h
+random-frontend      random-frontend-sa                            0         14h
+random-jobs          default                                       0         14h
+random-jobs          random-jobs-sa                                0         14h
+random-scheduler     default                                       0         14h
+random-scheduler     random-scheduler-sa                           0         14h
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ÉTAPE 7/7: Vérification du déploiement[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Vérification des namespaces...
+[0;32m[✓ SUCCESS][0m ✓ Namespace random-backend existe
+[0;32m[✓ SUCCESS][0m ✓ Namespace random-jobs existe
+[0;32m[✓ SUCCESS][0m ✓ Namespace random-db existe
+[0;32m[✓ SUCCESS][0m ✓ Namespace random-frontend existe
+[0;32m[✓ SUCCESS][0m ✓ Namespace random-scheduler existe
+[0;34m[INFO][0m Vérification des ResourceQuotas...
+[0;32m[✓ SUCCESS][0m ✓ ResourceQuota présent dans random-backend
+[0;32m[✓ SUCCESS][0m ✓ ResourceQuota présent dans random-jobs
+[0;32m[✓ SUCCESS][0m ✓ ResourceQuota présent dans random-db
+[0;32m[✓ SUCCESS][0m ✓ ResourceQuota présent dans random-frontend
+[0;32m[✓ SUCCESS][0m ✓ ResourceQuota présent dans random-scheduler
+[0;34m[INFO][0m Vérification des LimitRanges...
+[0;32m[✓ SUCCESS][0m ✓ LimitRange présent dans random-backend
+[0;32m[✓ SUCCESS][0m ✓ LimitRange présent dans random-jobs
+[0;32m[✓ SUCCESS][0m ✓ LimitRange présent dans random-db
+[0;32m[✓ SUCCESS][0m ✓ LimitRange présent dans random-frontend
+[0;32m[✓ SUCCESS][0m ✓ LimitRange présent dans random-scheduler
+[0;34m[INFO][0m Vérification des NetworkPolicies...
+[0;32m[✓ SUCCESS][0m ✓ NetworkPolicies présentes dans random-backend (5)
+[0;32m[✓ SUCCESS][0m ✓ NetworkPolicies présentes dans random-jobs (5)
+[0;32m[✓ SUCCESS][0m ✓ NetworkPolicies présentes dans random-db (5)
+[0;32m[✓ SUCCESS][0m ✓ NetworkPolicies présentes dans random-frontend (5)
+[0;32m[✓ SUCCESS][0m ✓ NetworkPolicies présentes dans random-scheduler (5)
+[0;34m[INFO][0m Vérification des ServiceAccounts...
+[0;32m[✓ SUCCESS][0m ✓ ServiceAccount présent dans random-backend
+[0;32m[✓ SUCCESS][0m ✓ ServiceAccount présent dans random-jobs
+[0;32m[✓ SUCCESS][0m ✓ ServiceAccount présent dans random-db
+[0;32m[✓ SUCCESS][0m ✓ ServiceAccount présent dans random-frontend
+[0;32m[✓ SUCCESS][0m ✓ ServiceAccount présent dans random-scheduler
+[0;32m[✓ SUCCESS][0m ═══════════════════════════════════════════════════════
+[0;32m[✓ SUCCESS][0m   DÉPLOIEMENT RÉUSSI - Aucune erreur détectée
+[0;32m[✓ SUCCESS][0m ═══════════════════════════════════════════════════════
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ ⚠️  ALERTES CRITIQUES[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1;33m[⚠ WARNING][0m ╔════════════════════════════════════════════════════════════════╗
+[1;33m[⚠ WARNING][0m ║  ALERTE CRITIQUE - Base de données PostgreSQL (random-db)     ║
+[1;33m[⚠ WARNING][0m ╚════════════════════════════════════════════════════════════════╝
+[1;33m[⚠ WARNING][0m 
+[1;33m[⚠ WARNING][0m Il est CRUCIAL de surveiller la saturation du PVC de la base de
+[1;33m[⚠ WARNING][0m données PostgreSQL pour éviter une interruption de service.
+[1;33m[⚠ WARNING][0m 
+[1;33m[⚠ WARNING][0m Actions recommandées:
+[1;33m[⚠ WARNING][0m   1. Configurer un StorageClass avec expansion automatique
+[1;33m[⚠ WARNING][0m   2. Mettre en place des alertes de monitoring (seuil: 80%)
+[1;33m[⚠ WARNING][0m   3. Implémenter une stratégie de backup régulière
+[1;33m[⚠ WARNING][0m 
+[1;33m[⚠ WARNING][0m Pour plus de détails, consultez le document de passation.
+[1;33m[⚠ WARNING][0m ═══════════════════════════════════════════════════════════════
+
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;35m➤ 📊 RÉSUMÉ DU DÉPLOIEMENT[0m
+[0;35m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m[INFO][0m Namespaces configurés:
+NAME               STATUS   AGE   LABELS
+random-backend     Active   14h   app=random,component=backend,env=production,kubernetes.io/metadata.name=random-backend
+random-db          Active   14h   app=random,component=database,env=production,kubernetes.io/metadata.name=random-db,monitoring=enabled
+random-frontend    Active   14h   app=random,component=frontend,env=production,kubernetes.io/metadata.name=random-frontend
+random-jobs        Active   14h   app=random,component=jobs,env=production,kubernetes.io/metadata.name=random-jobs
+random-scheduler   Active   14h   app=random,component=scheduler,env=production,kubernetes.io/metadata.name=random-scheduler
+[0;34m[INFO][0m Pour vérifier la configuration complète, exécutez:
+[0;34m[INFO][0m Pour tester les permissions RBAC, exécutez:
+[0;34m[INFO][0m Logs sauvegardés dans: /home/sismael/Documents/exercices/lab1/setup-20251107-151019.log
+[0;32m[✓ SUCCESS][0m ╔════════════════════════════════════════════════════════════════╗
+[0;32m[✓ SUCCESS][0m ║                  SETUP TERMINÉ AVEC SUCCÈS                     ║
+[0;32m[✓ SUCCESS][0m ╚════════════════════════════════════════════════════════════════╝

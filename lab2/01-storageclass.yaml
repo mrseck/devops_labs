@@ -1,0 +1,13 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast-ssd-expandable
+  labels:
+    app: postgresql
+    component: storage
+    lab: lab2
+provisioner: rancher.io/local-path  
+allowVolumeExpansion: true
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Retain
+

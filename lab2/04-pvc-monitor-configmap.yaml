@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pvc-monitor-script
+  namespace: random-db
+  labels:
+    app: postgresql
+    component: pvc-monitor
+    lab: lab2
+data:
+  pvc_monitor.py: |
+    import os
+    import subprocess
+    from http.server import HTTPServer, BaseHTTPRequestHandler
+    
+    class MetricsHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == '/metrics':
+                try:
+                    result = subprocess.run(
+                        ['df', '-B1', '/var/lib/postgresql/data'],
+                        capture_output=True,
+                        text=True
+                    )
+                    lines = result.stdout.strip().split('\n')
+                    if len(lines) > 1:
+                        parts = lines[1].split()
+                        capacity = int(parts[1])
+                        used = int(parts[2])
+                        available = int(parts[3])
+                        usage_percent = (used / capacity * 100) if capacity > 0 else 0
+                    else:
+                        capacity = used = available = usage_percent = 0
+                    
+                    namespace = os.environ.get('NAMESPACE', 'random-db')
+                    metrics = (
+                        "# HELP pvc_capacity_bytes Total capacity of the PVC in bytes\n"
+                        "# TYPE pvc_capacity_bytes gauge\n"
+                        f"pvc_capacity_bytes{{namespace=\"{namespace}\"}} {capacity}\n"
+                        "# HELP pvc_used_bytes Used space in bytes\n"
+                        "# TYPE pvc_used_bytes gauge\n"
+                        f"pvc_used_bytes{{namespace=\"{namespace}\"}} {used}\n"
+                        "# HELP pvc_available_bytes Available space in bytes\n"
+                        "# TYPE pvc_available_bytes gauge\n"
+                        f"pvc_available_bytes{{namespace=\"{namespace}\"}} {available}\n"
+                        "# HELP pvc_usage_percent Percentage of PVC usage\n"
+                        "# TYPE pvc_usage_percent gauge\n"
+                        f"pvc_usage_percent{{namespace=\"{namespace}\"}} {usage_percent:.2f}\n"
+                    )
+                    
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'text/plain; version=0.0.4')
+                    self.end_headers()
+                    self.wfile.write(metrics.encode())
+                except Exception as e:
+                    self.send_response(500)
+                    self.end_headers()
+                    self.wfile.write(f"Error: {str(e)}".encode())
+            else:
+                self.send_response(404)
+                self.end_headers()
+        
+        def log_message(self, format, *args):
+            pass
+    
+    print("✅ Starting PVC metrics exporter on port 9090...")
+    server = HTTPServer(('0.0.0.0', 9090), MetricsHandler)
+    server.serve_forever()
