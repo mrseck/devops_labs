@@ -1,0 +1,215 @@
+---
+# ServiceMonitors pour surveiller la stack de monitoring elle-même
+
+# Loki ServiceMonitors
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: loki-distributor
+  namespace: loki
+  labels:
+    app: loki
+    component: distributor
+spec:
+  selector:
+    matchLabels:
+      app: loki
+      component: distributor
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: loki-ingester
+  namespace: loki
+  labels:
+    app: loki
+    component: ingester
+spec:
+  selector:
+    matchLabels:
+      app: loki
+      component: ingester
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: loki-querier
+  namespace: loki
+  labels:
+    app: loki
+    component: querier
+spec:
+  selector:
+    matchLabels:
+      app: loki
+      component: querier
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+# Mimir ServiceMonitors
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mimir-distributor
+  namespace: mimir
+  labels:
+    app: mimir
+    component: distributor
+spec:
+  selector:
+    matchLabels:
+      app: mimir
+      component: distributor
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mimir-ingester
+  namespace: mimir
+  labels:
+    app: mimir
+    component: ingester
+spec:
+  selector:
+    matchLabels:
+      app: mimir
+      component: ingester
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mimir-compactor
+  namespace: mimir
+  labels:
+    app: mimir
+    component: compactor
+spec:
+  selector:
+    matchLabels:
+      app: mimir
+      component: compactor
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+# Tempo ServiceMonitors
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tempo-distributor
+  namespace: tempo
+  labels:
+    app: tempo
+    component: distributor
+spec:
+  selector:
+    matchLabels:
+      app: tempo
+      component: distributor
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+# MinIO ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio
+  namespace: minio
+  labels:
+    app: minio
+spec:
+  selector:
+    matchLabels:
+      app: minio
+  endpoints:
+  - port: api
+    interval: 30s
+    path: /minio/v2/metrics/cluster
+
+---
+# Alloy ServiceMonitors
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alloy-logs
+  namespace: alloy-logs
+  labels:
+    app: alloy-logs
+spec:
+  selector:
+    matchLabels:
+      app: alloy-logs
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alloy-metrics
+  namespace: alloy-metrics
+  labels:
+    app: alloy-metrics
+spec:
+  selector:
+    matchLabels:
+      app: alloy-metrics
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: alloy-traces
+  namespace: alloy-traces
+  labels:
+    app: alloy-traces
+spec:
+  selector:
+    matchLabels:
+      app: alloy-traces
+  endpoints:
+  - port: http-metrics
+    interval: 30s
+
+---
+# Grafana ServiceMonitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: grafana
+  namespace: grafana
+  labels:
+    app: grafana
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  endpoints:
+  - port: http
+    interval: 30s
+

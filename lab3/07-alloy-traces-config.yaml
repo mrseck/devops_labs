@@ -1,0 +1,84 @@
+# Configuration Alloy pour la collecte de traces
+# Ce fichier sera monté dans un ConfigMap
+
+logging:
+  level: info
+  format: logfmt
+
+# Réception OTLP
+otelcol.receiver.otlp "otlp" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+  
+  output {
+    traces = [otelcol.processor.batch.input]
+    metrics = [otelcol.processor.batch.input]
+    logs = [otelcol.processor.batch.input]
+  }
+}
+
+# Processor k8sattributes - Enrichir avec métadonnées K8s
+otelcol.processor.k8sattributes "k8sattributes" {
+  auth_type = "serviceAccount"
+  passthrough = false
+  
+  extract {
+    metadata = ["namespace", "pod_name", "deployment", "service"]
+  }
+  
+  output {
+    traces = [otelcol.processor.batch.input]
+  }
+}
+
+# Processor batch - Grouper les traces
+otelcol.processor.batch "batch" {
+  timeout = "1s"
+  send_batch_size = 1024
+  
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+    metrics = [otelcol.exporter.otlp.mimir.input]
+  }
+}
+
+# Processor servicegraph - Générer des graphes de dépendances
+otelcol.processor.servicegraph "servicegraph" {
+  output {
+    metrics = [otelcol.exporter.otlp.mimir.input]
+  }
+}
+
+# Export vers Tempo
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo-distributor.tempo.svc.cluster.local:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+# Export métriques dérivées vers Mimir
+otelcol.exporter.otlp "mimir" {
+  client {
+    endpoint = "mimir-gateway.mimir.svc.cluster.local:80"
+    headers = {
+      "X-Scope-OrgID" = "pods"
+    }
+    tls {
+      insecure = true
+    }
+  }
+}
+
+# Pipeline de traces
+otelcol.processor.batch.output.traces -> otelcol.processor.k8sattributes -> otelcol.exporter.otlp.tempo
+
+# Pipeline de métriques
+otelcol.processor.batch.output.metrics -> otelcol.processor.servicegraph -> otelcol.exporter.otlp.mimir
+

@@ -1,0 +1,91 @@
+---
+# Exemple de déploiement Python FastAPI avec instrumentation OpenTelemetry
+# À déployer dans le namespace random-backend
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: random-backend-api
+  namespace: random-backend
+  labels:
+    app: random-backend
+    component: api
+  annotations:
+    # Annotation pour auto-instrumentation Python
+    instrumentation.opentelemetry.io/inject-python: "true"
+    # Référence à l'Instrumentation CR
+    instrumentation.opentelemetry.io/instrumentation-name: "python-instrumentation"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: random-backend
+      component: api
+  template:
+    metadata:
+      labels:
+        app: random-backend
+        component: api
+      annotations:
+        instrumentation.opentelemetry.io/inject-python: "true"
+        instrumentation.opentelemetry.io/instrumentation-name: "python-instrumentation"
+    spec:
+      containers:
+      - name: api
+        image: random-backend:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://alloy-traces.alloy-traces.svc.cluster.local:4318"
+        - name: OTEL_SERVICE_NAME
+          value: "random-backend-api"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "service.name=random-backend-api,service.namespace=random-backend,deployment.environment=production"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: random-backend-api
+  namespace: random-backend
+  labels:
+    app: random-backend
+    component: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: http
+    name: http
+  selector:
+    app: random-backend
+    component: api
+
+---
+# ServiceMonitor pour exposer les métriques de l'application
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: random-backend-api
+  namespace: random-backend
+  labels:
+    app: random-backend
+spec:
+  selector:
+    matchLabels:
+      app: random-backend
+      component: api
+  endpoints:
+  - port: http
+    interval: 30s
+    path: /metrics
+

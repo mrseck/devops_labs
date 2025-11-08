@@ -1,0 +1,133 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-metrics-config
+  namespace: alloy-metrics
+data:
+  config.yaml: |
+    logging:
+      level: info
+      format: logfmt
+
+    prometheus.remote_write "mimir_pods" {
+      endpoint {
+        url = "http://mimir-gateway.mimir.svc.cluster.local:80/prometheus/api/v1/push"
+        headers = {
+          "X-Scope-OrgID" = "pods"
+        }
+      }
+      queue_config {
+        max_samples_per_send = 1000
+        batch_send_deadline = "5s"
+      }
+    }
+
+    prometheus.remote_write "mimir_nodes" {
+      endpoint {
+        url = "http://mimir-gateway.mimir.svc.cluster.local:80/prometheus/api/v1/push"
+        headers = {
+          "X-Scope-OrgID" = "nodes"
+        }
+      }
+      queue_config {
+        max_samples_per_send = 1000
+        batch_send_deadline = "5s"
+      }
+    }
+
+    prometheus.scrape "kube_state_metrics" {
+      targets = discovery.kubernetes.endpoints.targets
+      forward_to = [prometheus.remote_write.mimir_pods.receiver]
+      scrape_interval = "15s"
+      scrape_timeout = "10s"
+    }
+
+    prometheus.scrape "node_exporter" {
+      targets = discovery.kubernetes.endpoints.targets
+      forward_to = [prometheus.remote_write.mimir_nodes.receiver]
+      scrape_interval = "15s"
+      scrape_timeout = "10s"
+    }
+
+    discovery.kubernetes "endpoints" {
+      role = "endpoints"
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy-metrics
+  namespace: alloy-metrics
+  labels:
+    app: alloy-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alloy-metrics
+  template:
+    metadata:
+      labels:
+        app: alloy-metrics
+    spec:
+      serviceAccountName: alloy-metrics
+      containers:
+      - name: alloy
+        image: grafana/alloy:latest
+        args:
+          - run
+          - /etc/alloy/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alloy
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: config
+        configMap:
+          name: alloy-metrics-config
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alloy-metrics
+  namespace: alloy-metrics
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy-metrics
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "nodes/proxy", "services", "endpoints", "pods"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["discovery.k8s.io"]
+  resources: ["endpointslices"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors", "podmonitors"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alloy-metrics
+subjects:
+- kind: ServiceAccount
+  name: alloy-metrics
+  namespace: alloy-metrics
+

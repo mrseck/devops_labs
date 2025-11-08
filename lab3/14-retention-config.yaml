@@ -1,0 +1,59 @@
+---
+# Configuration des rétentions et compaction
+# Ces configurations sont intégrées dans les values.yaml de chaque composant
+
+# Loki Retention Configuration
+# Dans 02-loki-values.yaml:
+# limits_config:
+#   retention_period: 2160h  # 90 jours
+#   per_stream_rate_limit: 3MB
+# retention_config:
+#   enabled: true
+#   delete_store_retention_period: 2160h
+# compactor:
+#   retentionEnabled: true
+#   retentionDeleteDelay: 2h
+#   retentionDeleteWorkerCount: 150
+
+# Mimir Retention Configuration
+# Dans 03-mimir-values.yaml:
+# limits:
+#   retention_period: 8760h  # 365 jours
+# compactor:
+#   compaction_interval: 2h
+#   retention_enabled: true
+#   retention_delete_delay: 2h
+#   retention_delete_worker_count: 150
+# Downsampling:
+#   - 5m après 7 jours
+#   - 1h après 30 jours
+
+# Tempo Retention Configuration
+# Dans 04-tempo-values.yaml:
+# retention_period: 720h  # 30 jours
+# compactor:
+#   retention: 720h
+
+# MinIO Lifecycle Policies
+# Script pour configurer les lifecycle policies MinIO
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minio-lifecycle-policies
+  namespace: minio
+data:
+  apply-lifecycle.sh: |
+    #!/bin/bash
+    # Script pour appliquer les lifecycle policies MinIO
+    
+    # Configuration des buckets avec lifecycle
+    # Transition vers storage class froid après 90 jours
+    # Suppression après rétention complète
+    
+    mc ilm add minio-local/loki-data --transition-days 90 --transition-storage-class GLACIER
+    mc ilm add minio-local/mimir-blocks --transition-days 180 --transition-storage-class GLACIER
+    mc ilm add minio-local/tempo-data --transition-days 30 --transition-storage-class GLACIER
+    
+    echo "Lifecycle policies appliquées"
+

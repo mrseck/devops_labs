@@ -1,0 +1,116 @@
+# Configuration Alloy pour la collecte de métriques
+# Ce fichier sera monté dans un ConfigMap
+
+logging:
+  level: info
+  format: logfmt
+
+# Prometheus remote write vers Mimir
+prometheus.remote_write "mimir_pods" {
+  endpoint {
+    url = "http://mimir-gateway.mimir.svc.cluster.local:80/prometheus/api/v1/push"
+    headers = {
+      "X-Scope-OrgID" = "pods"
+    }
+  }
+  
+  queue_config {
+    max_samples_per_send = 1000
+    batch_send_deadline = "5s"
+  }
+}
+
+prometheus.remote_write "mimir_nodes" {
+  endpoint {
+    url = "http://mimir-gateway.mimir.svc.cluster.local:80/prometheus/api/v1/push"
+    headers = {
+      "X-Scope-OrgID" = "nodes"
+    }
+  }
+  
+  queue_config {
+    max_samples_per_send = 1000
+    batch_send_deadline = "5s"
+  }
+}
+
+# Scraping kube-state-metrics
+prometheus.scrape "kube_state_metrics" {
+  targets = discovery.kubernetes.endpoints.targets
+  forward_to = [prometheus.remote_write.mimir_pods.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+  
+  relabel "job" {
+    target_label = "job"
+    replacement = "kube-state-metrics"
+  }
+}
+
+# Scraping node-exporter
+prometheus.scrape "node_exporter" {
+  targets = discovery.kubernetes.endpoints.targets
+  forward_to = [prometheus.remote_write.mimir_nodes.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+  
+  relabel "job" {
+    target_label = "job"
+    replacement = "node-exporter"
+  }
+}
+
+# Scraping cAdvisor
+prometheus.scrape "cadvisor" {
+  targets = discovery.kubernetes.endpoints.targets
+  forward_to = [prometheus.remote_write.mimir_nodes.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+  
+  relabel "job" {
+    target_label = "job"
+    replacement = "cadvisor"
+  }
+}
+
+# Découverte ServiceMonitors
+discovery.kubernetes "servicemonitors" {
+  role = "endpoints"
+  
+  selectors {
+    role = "endpoints"
+    label = "prometheus.io/scrape=true"
+  }
+}
+
+# Découverte PodMonitors
+discovery.kubernetes "podmonitors" {
+  role = "pod"
+  
+  selectors {
+    role = "pod"
+    annotation = "prometheus.io/scrape=true"
+  }
+}
+
+# Scraping ServiceMonitors (métriques applicatives -> pods)
+prometheus.scrape "servicemonitors" {
+  targets = discovery.kubernetes.servicemonitors.targets
+  forward_to = [prometheus.remote_write.mimir_pods.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+}
+
+# Scraping PodMonitors (métriques applicatives -> pods)
+prometheus.scrape "podmonitors" {
+  targets = discovery.kubernetes.podmonitors.targets
+  forward_to = [prometheus.remote_write.mimir_pods.receiver]
+  
+  scrape_interval = "15s"
+  scrape_timeout = "10s"
+}
+

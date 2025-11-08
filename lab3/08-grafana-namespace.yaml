@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grafana
+  labels:
+    app: monitoring
+    component: visualization
+    env: production
+  annotations:
+    description: "Grafana visualization and dashboards"
+    contact: "platform-team@random.com"
+

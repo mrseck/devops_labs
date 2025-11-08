@@ -1,0 +1,99 @@
+---
+# PodDisruptionBudget pour haute disponibilité
+
+# Loki Querier PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: loki-querier
+  namespace: loki
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: loki
+      component: querier
+
+---
+# Loki Ingester PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: loki-ingester
+  namespace: loki
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: loki
+      component: ingester
+
+---
+# Mimir Querier PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-querier
+  namespace: mimir
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: mimir
+      component: querier
+
+---
+# Mimir Ingester PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: mimir-ingester
+  namespace: mimir
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: mimir
+      component: ingester
+
+---
+# Tempo Querier PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tempo-querier
+  namespace: tempo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tempo
+      component: querier
+
+---
+# Tempo Ingester PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: tempo-ingester
+  namespace: tempo
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: tempo
+      component: ingester
+
+---
+# Alertmanager PDB
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: alertmanager
+  namespace: monitoring
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: alertmanager
+

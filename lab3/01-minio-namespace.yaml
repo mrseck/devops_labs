@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio
+  labels:
+    app: monitoring
+    component: storage
+    env: production
+  annotations:
+    description: "MinIO object storage backend for Loki, Mimir and Tempo"
+    contact: "platform-team@random.com"
+

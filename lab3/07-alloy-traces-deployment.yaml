@@ -1,0 +1,137 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-traces-config
+  namespace: alloy-traces
+data:
+  config.yaml: |
+    logging:
+      level: info
+      format: logfmt
+
+    otelcol.receiver.otlp "otlp" {
+      grpc {
+        endpoint = "0.0.0.0:4317"
+      }
+      http {
+        endpoint = "0.0.0.0:4318"
+      }
+      output {
+        traces = [otelcol.processor.batch.input]
+      }
+    }
+
+    otelcol.processor.batch "batch" {
+      timeout = "1s"
+      send_batch_size = 1024
+      output {
+        traces = [otelcol.exporter.otlp.tempo.input]
+      }
+    }
+
+    otelcol.exporter.otlp "tempo" {
+      client {
+        endpoint = "tempo-distributor.tempo.svc.cluster.local:4317"
+        tls {
+          insecure = true
+        }
+      }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alloy-traces
+  namespace: alloy-traces
+  labels:
+    app: alloy-traces
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: alloy-traces
+  template:
+    metadata:
+      labels:
+        app: alloy-traces
+    spec:
+      serviceAccountName: alloy-traces
+      containers:
+      - name: alloy
+        image: grafana/alloy:latest
+        args:
+          - run
+          - /etc/alloy/config.yaml
+        ports:
+        - containerPort: 4317
+          name: otlp-grpc
+        - containerPort: 4318
+          name: otlp-http
+        volumeMounts:
+        - name: config
+          mountPath: /etc/alloy
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: config
+        configMap:
+          name: alloy-traces-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alloy-traces
+  namespace: alloy-traces
+  labels:
+    app: alloy-traces
+spec:
+  type: ClusterIP
+  ports:
+  - port: 4317
+    targetPort: otlp-grpc
+    name: otlp-grpc
+  - port: 4318
+    targetPort: otlp-http
+    name: otlp-http
+  selector:
+    app: alloy-traces
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: alloy-traces
+  namespace: alloy-traces
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: alloy-traces
+rules:
+- apiGroups: [""]
+  resources: ["pods", "nodes", "namespaces"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: alloy-traces
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: alloy-traces
+subjects:
+- kind: ServiceAccount
+  name: alloy-traces
+  namespace: alloy-traces
+

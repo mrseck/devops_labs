@@ -1,0 +1,105 @@
+# Configuration Alloy pour la collecte de logs
+# Ce fichier sera monté dans un ConfigMap
+
+logging:
+  level: info
+  format: logfmt
+
+loki.source.kubernetes "k8s_logs" {
+  targets = discovery.kubernetes.pods.targets
+  forward_to = [loki.write.loki.receiver]
+  
+  # Parser automatique
+  relabel "k8s" {
+    target_label = "__path__"
+    replacement = "/var/log/pods/*$1/*.log"
+    action = "replace"
+  }
+}
+
+discovery.kubernetes "pods" {
+  role = "pod"
+  
+  # Découverte automatique des pods
+  selectors {
+    role = "pod"
+  }
+  
+  # Labels à ajouter
+  relabel "namespace" {
+    target_label = "namespace"
+    source_labels = ["__meta_kubernetes_namespace"]
+  }
+  
+  relabel "pod_name" {
+    target_label = "pod_name"
+    source_labels = ["__meta_kubernetes_pod_name"]
+  }
+  
+  relabel "container_name" {
+    target_label = "container_name"
+    source_labels = ["__meta_kubernetes_pod_container_name"]
+  }
+  
+  relabel "node_name" {
+    target_label = "node_name"
+    source_labels = ["__meta_kubernetes_pod_node_name"]
+  }
+  
+  relabel "job" {
+    target_label = "job"
+    replacement = "kubernetes-pods"
+  }
+}
+
+# Filtres
+loki.process "filter_logs" {
+  forward_to = [loki.write.loki.receiver]
+  
+  # Exclure les logs de kube-system (sauf erreurs)
+  stage.regex {
+    expression = ".*"
+    source_labels = ["namespace", "level"]
+  }
+  
+  stage.drop {
+    expression = "namespace == \"kube-system\" && level != \"error\""
+  }
+  
+  # Exclure les health checks
+  stage.drop {
+    expression = ".*health.*check.*"
+    source_labels = ["__entry__"]
+  }
+  
+  # Parser JSON automatique si détecté
+  stage.json {
+    expressions = {
+      level = "level"
+      message = "message"
+      timestamp = "timestamp"
+    }
+  }
+}
+
+# Destination Loki
+loki.write "loki" {
+  endpoint {
+    url = "http://loki-gateway.loki.svc.cluster.local:80"
+  }
+  
+  # Buffer en cas d'indisponibilité
+  external_labels = {
+    source = "alloy-logs"
+  }
+  
+  # Buffer de 1Gi
+  max_backoff = "5s"
+  min_backoff = "100ms"
+}
+
+# Buffer local
+loki.buffer "local_buffer" {
+  max_size = 1073741824  # 1Gi en bytes
+}
+

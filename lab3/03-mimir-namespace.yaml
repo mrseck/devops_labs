@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mimir
+  labels:
+    app: monitoring
+    component: metrics
+    env: production
+  annotations:
+    description: "Mimir metrics TSDB system"
+    contact: "platform-team@random.com"
+

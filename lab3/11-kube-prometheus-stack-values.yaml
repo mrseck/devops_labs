@@ -1,0 +1,98 @@
+# Values pour kube-prometheus-stack
+# Note: Ce stack inclut Prometheus, Alertmanager, Grafana (peut réutiliser celui du Lab)
+# kube-state-metrics et node-exporter sont déjà déployés séparément
+
+# Prometheus
+prometheus:
+  enabled: true
+  prometheusSpec:
+    retention: 7d  # 7 jours localement
+    retentionSize: 50GB
+    
+    # Remote write vers Mimir pour stockage long terme
+    remoteWrite:
+      - url: http://mimir-gateway.mimir.svc.cluster.local:80/prometheus/api/v1/push
+        headers:
+          X-Scope-OrgID: "pods"
+        writeRelabelConfigs:
+          - sourceLabels: [__name__]
+            regex: '.*'
+            action: keep
+    
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: "1000m"
+      limits:
+        memory: "4Gi"
+        cpu: "2000m"
+    
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          storageClassName: fast-ssd-expandable
+          resources:
+            requests:
+              storage: 50Gi
+
+# Alertmanager
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    replicas: 3
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+
+# Grafana (désactiver si on utilise celui du Lab 8)
+grafana:
+  enabled: false  # Utiliser le Grafana déployé séparément
+
+# kube-state-metrics (désactiver car déjà déployé)
+kubeStateMetrics:
+  enabled: false
+
+# node-exporter (désactiver car déjà déployé)
+nodeExporter:
+  enabled: false
+
+# Prometheus Operator
+prometheusOperator:
+  enabled: true
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# Service Monitors par défaut
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: true
+    general: true
+    k8s: true
+    kubeApiserver: true
+    kubePrometheusGeneral: true
+    kubePrometheusNodeRecording: true
+    kubernetesApps: true
+    kubernetesResources: true
+    kubernetesStorage: true
+    kubernetesSystem: true
+    kubeScheduler: true
+    kubeStateMetrics: true
+    network: true
+    node: true
+    nodeExporterAlerting: true
+    nodeExporterRecording: true
+    prometheus: true
+    prometheusOperator: true
+

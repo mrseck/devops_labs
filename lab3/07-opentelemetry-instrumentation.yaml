@@ -1,0 +1,30 @@
+---
+# Instrumentation automatique pour Python dans le namespace random-backend
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: python-instrumentation
+  namespace: random-backend
+spec:
+  exporter:
+    endpoint: http://alloy-traces.alloy-traces.svc.cluster.local:4318
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: "1.0"  # 100% en dev, 0.1 pour 10% en prod
+  python:
+    env:
+      - name: OTEL_SERVICE_NAME
+        value: "random-backend"
+      - name: OTEL_SERVICE_NAMESPACE
+        value: "random-backend"
+      - name: OTEL_RESOURCE_ATTRIBUTES
+        value: "service.name=random-backend,service.namespace=random-backend,deployment.environment=production"
+
+---
+# Annotation à ajouter aux Deployments pour auto-instrumentation
+# instrumentation.opentelemetry.io/inject-python: "true"
+# instrumentation.opentelemetry.io/inject-python: "random-backend/python-instrumentation"
+

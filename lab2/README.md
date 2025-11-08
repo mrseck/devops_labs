@@ -31,18 +31,23 @@ Surveillance & Alertes (Prometheus + Grafana)
 - `02-postgres-service-metrics.yaml` - Service pour exposer les métriques
 
 ### Exercice 3 : Surveillance Prometheus
-- `03-servicemonitor.yaml` - ServiceMonitor pour Prometheus (avec label `team: monitoring`)
-- `03-prometheus-instance.yaml` - Instance Prometheus 
+- `03-servicemonitor.yaml` - ServiceMonitor pour Prometheus (avec labels `lab: lab2` et `team: monitoring`)
+- `03-prometheus-instance.yaml` - Instance Prometheus avec RBAC et Service
+- `04-prometheus-rbac.yaml` - RBAC pour Prometheus (alternative) 
 
 ### Exercice 4 : Alertes et Alertmanager
 - `04-prometheusrule.yaml` - Règles d'alerte (70%, 85%, 95%, croissance) utilisant les métriques `pvc_*`
 - `04-alertmanager-config.yaml` - Configuration Alertmanager avec routing par sévérité
-- `04-webhook-receiver.yaml` - Webhook receiver pour recevoir et afficher les alertes
+- `04-pvc-monitor-configmap.yaml` - ConfigMap contenant le script Python du sidecar de monitoring
 - `04-test-pvc-saturation.sh` - Script de test pour simuler la saturation du PVC
 
 ### Exercice 5 : Dashboard Grafana
-- `05-grafana-dashboard.json` - Dashboard Grafana (JSON)
-- `05-grafana-dashboard-configmap.yaml` - ConfigMap pour provisionner le dashboard
+- `05-grafana-deployment.yaml` - Déploiement Grafana dans le namespace `random-db`
+- `05-grafana-service.yaml` - Service ClusterIP pour Grafana
+- `05-grafana-datasources.yaml` - Configuration de la source de données Prometheus
+- `05-grafana-dashboard-provider.yaml` - Configuration du provider de dashboards
+- `05-grafana-dashboard-configmap.yaml` - ConfigMap contenant le dashboard JSON
+- `05-grafana-dashboard.json` - Dashboard Grafana (JSON) pour le monitoring PVC
 
 ### Exercice 6 : Extension du PVC
 - `06-extend-pvc.sh` - Script automatisé pour étendre le PVC
@@ -77,6 +82,10 @@ kubectl get storageclass
 
 2. **Déployer PostgreSQL**
 ```bash
+# Créer le ConfigMap du sidecar de monitoring (nécessaire avant le StatefulSet)
+kubectl apply -f 04-pvc-monitor-configmap.yaml
+
+# Déployer PostgreSQL
 kubectl apply -f 02-postgres-configmap.yaml
 kubectl apply -f 02-postgres-secret.yaml
 kubectl apply -f 02-postgres-statefulset.yaml
@@ -85,18 +94,22 @@ kubectl apply -f 02-postgres-service-metrics.yaml
 # Vérifier le déploiement
 kubectl get pods -n random-db
 kubectl get pvc -n random-db
+kubectl get svc -n random-db
 ```
 
 3. **Configurer la Surveillance Prometheus**
 ```bash
-# Créer l'instance Prometheus
+# Créer l'instance Prometheus (inclut ServiceAccount, RBAC, Prometheus et Service)
 kubectl apply -f 03-prometheus-instance.yaml
 
-# Configurer le ServiceMonitor (avec label team: monitoring requis)
+# Créer le ConfigMap du sidecar de monitoring
+kubectl apply -f 04-pvc-monitor-configmap.yaml
+
+# Configurer le ServiceMonitor (avec label lab: lab2 requis)
 kubectl apply -f 03-servicemonitor.yaml
 
 # Vérifier que Prometheus scrap les métriques
-kubectl port-forward -n default prometheus-prometheus-0 9090:9090
+kubectl port-forward -n default svc/prometheus 9090:9090
 
 # Dans un navigateur: http://localhost:9090
 # Rechercher: pvc_usage_percent, pvc_capacity_bytes, pvc_used_bytes
@@ -116,10 +129,19 @@ kubectl apply -f 04-alertmanager-config.yaml
 
 5. **Configurer Grafana**
 ```bash
+# Déployer Grafana (déploiement, service, datasources, dashboard provider et dashboard)
+kubectl apply -f 05-grafana-deployment.yaml
+kubectl apply -f 05-grafana-service.yaml
+kubectl apply -f 05-grafana-datasources.yaml
+kubectl apply -f 05-grafana-dashboard-provider.yaml
 kubectl apply -f 05-grafana-dashboard-configmap.yaml
 
-# Vérifier que Grafana démarrN
+# Vérifier que Grafana démarre
+kubectl get pods -n random-db -l app=grafana
 kubectl port-forward -n random-db svc/grafana 3000:3000
+
+# Accéder à Grafana: http://localhost:3000
+# Identifiants par défaut: admin / admin
 ```
 
 6. **Tester la Connexion PostgreSQL**
@@ -165,7 +187,7 @@ chmod +x 07-restore-backup.sh
 
 ### Métriques Exposées
 
-Le sidecar `pvc-monitor` dans le pod PostgreSQL expose les métriques suivantes (avec label `namespace="random-db"`) :
+Le sidecar `pvc-monitor` (défini dans le ConfigMap `pvc-monitor-script`) dans le pod PostgreSQL expose les métriques suivantes (avec label `namespace="random-db"`) :
 
 - `pvc_capacity_bytes{namespace="random-db"}` - Capacité totale du PVC en bytes
 - `pvc_used_bytes{namespace="random-db"}` - Espace utilisé en bytes
@@ -174,7 +196,10 @@ Le sidecar `pvc-monitor` dans le pod PostgreSQL expose les métriques suivantes 
 
 **Accès aux métriques :**
 ```bash
-# Port-forward vers le pod PostgreSQL
+# Port-forward vers le service de métriques
+kubectl port-forward -n random-db svc/postgres-metrics 9091:9090
+
+# Ou directement vers le pod PostgreSQL
 kubectl port-forward -n random-db postgres-0 9091:9090
 
 # Accéder aux métriques
@@ -223,22 +248,29 @@ L'Alertmanager route les alertes selon leur sévérité :
 **Prometheus :**
 ```bash
 # Port-forward vers Prometheus
-kubectl port-forward -n default svc/prometheus-web 9090:9090
-# Ou via NodePort (port 30090)
+kubectl port-forward -n default svc/prometheus 9090:9090
 ```
 - Interface web : `http://localhost:9090`
 - Alertes : `http://localhost:9090/alerts`
 - Graph : `http://localhost:9090/graph`
 - Targets : `http://localhost:9090/targets`
 
-**Webhook Receiver (pour les tests) :**
+**Alertmanager (si déployé) :**
 ```bash
-# Voir les logs du webhook receiver
-kubectl logs -n random-db -l app=webhook-receiver -f
+# Vérifier la configuration Alertmanager
+kubectl get secret -n random-db alertmanager-config -o yaml
+
+# Voir les logs d'Alertmanager
+kubectl logs -n <namespace-alertmanager> -l app=alertmanager -f
 ```
 
 **Grafana :**
-- Interface : `http://grafana.example.com` (dashboard: "PostgreSQL PVC Monitoring")
+```bash
+# Port-forward vers Grafana
+kubectl port-forward -n random-db svc/grafana 3000:3000
+```
+- Interface : `http://localhost:3000` (identifiants par défaut: admin / admin)
+- Dashboard : "PostgreSQL PVC Monitoring"
 
 ## 🧪 Tests
 
@@ -284,10 +316,7 @@ kubectl exec -n random-db postgres-0 -- bash -c '
 # 2. Vérifier les alertes
 # http://localhost:9090/alerts
 
-# 3. Surveiller les logs du webhook receiver
-kubectl logs -n random-db -l app=webhook-receiver -f
-
-# 4. Vérifier l'utilisation du PVC
+# 3. Vérifier l'utilisation du PVC
 kubectl exec -n random-db postgres-0 -c postgres -- df -h /var/lib/postgresql/data
 ```
 
@@ -311,16 +340,20 @@ kubectl exec -n random-db postgres-0 -c postgres -- df -h /var/lib/postgresql/da
 2. **Sécurité** : Changer le mot de passe PostgreSQL dans `02-postgres-secret.yaml` en production !
 
 3. **Monitoring** : 
-   - Le sidecar de monitoring utilise Python pour exposer les métriques Prometheus
+   - Le sidecar de monitoring (`pvc-monitor`) utilise Python pour exposer les métriques Prometheus
+   - Le script du sidecar est défini dans le ConfigMap `pvc-monitor-script` (fichier `04-pvc-monitor-configmap.yaml`)
    - Les métriques incluent le label `namespace` pour faciliter le filtrage
-   - Le ServiceMonitor doit avoir le label `team: monitoring` pour être sélectionné par Prometheus
-   - La PrometheusRule doit avoir le label `prometheus: default` correspondant à l'instance Prometheus
+   - Le sidecar expose les métriques sur le port 9090
+   - Le service `postgres-metrics` expose le port 9090 et sélectionne les pods avec les labels `app: postgresql` et `component: database`
+   - Le ServiceMonitor doit avoir le label `lab: lab2` pour être sélectionné par Prometheus (le label `team: monitoring` est présent mais optionnel)
+   - La PrometheusRule doit avoir le label `lab: lab2` pour être sélectionnée par Prometheus
    - Pour un environnement de production, considérer l'utilisation d'un exporter Prometheus dédié (node-exporter, etc.)
 
 4. **Configuration Prometheus** :
-   - L'instance Prometheus dans `04-prometheus-instance.yaml` utilise le sélecteur `team: monitoring` pour les ServiceMonitors
-   - Le `ruleSelector: {}` permet de charger toutes les PrometheusRules (peut être restreint si nécessaire)
-   - Le ServiceMonitor dans `03-servicemonitor.yaml` doit avoir le label `team: monitoring`
+   - L'instance Prometheus dans `03-prometheus-instance.yaml` utilise le sélecteur `lab: lab2` pour les ServiceMonitors et les PrometheusRules
+   - Le ServiceMonitor dans `03-servicemonitor.yaml` doit avoir le label `lab: lab2` (le label `team: monitoring` est présent mais optionnel)
+   - La PrometheusRule doit avoir le label `lab: lab2` pour être sélectionnée par Prometheus
+   - Le service Prometheus s'appelle `prometheus` dans le namespace `default` (type ClusterIP)
 
 5. **Backups** : Les backups sont configurés pour s'exécuter quotidiennement à 2h du matin. Ajuster selon vos besoins.
 
@@ -340,21 +373,24 @@ Checklist de validation :
 - [ ] Sidecar de monitoring opérationnel et exposant les métriques
 
 **Exercice 3 : Surveillance**
-- [ ] ServiceMonitor créé avec le label `team: monitoring`
-- [ ] Instance Prometheus déployée
+- [ ] ConfigMap `pvc-monitor-script` créé
+- [ ] ServiceMonitor créé avec le label `lab: lab2`
+- [ ] Instance Prometheus déployée (ServiceAccount, RBAC, Prometheus et Service)
+- [ ] Service `postgres-metrics` créé et pointe vers les pods PostgreSQL
 - [ ] Métriques `pvc_*` visibles dans Prometheus (avec label `namespace`)
 - [ ] ServiceMonitor détecté par Prometheus (vérifier dans `/targets`)
 
 **Exercice 4 : Alertes**
-- [ ] PrometheusRule déployée avec le label `prometheus: default`
+- [ ] PrometheusRule déployée avec le label `lab: lab2` (le label `prometheus: default` est présent mais optionnel)
 - [ ] Règles d'alerte chargées dans Prometheus (vérifier dans `/rules`)
 - [ ] Alertes visibles dans l'interface Prometheus (`/alerts`)
-- [ ] Webhook receiver déployé et fonctionnel
 - [ ] Configuration Alertmanager appliquée (si Alertmanager est déployé)
 - [ ] Test de saturation effectué et alertes déclenchées aux bons seuils
 
 **Exercice 5-8 : Dashboard et procédures**
-- [ ] Dashboard Grafana fonctionnel
+- [ ] Grafana déployé dans le namespace `random-db`
+- [ ] Source de données Prometheus configurée dans Grafana
+- [ ] Dashboard Grafana fonctionnel et accessible
 - [ ] Procédure d'extension documentée et testée
 - [ ] Stratégie de backup opérationnelle
 - [ ] Runbook complet et accessible
@@ -372,22 +408,27 @@ Pour toute question ou problème, consulter :
 
 ### Les métriques ne sont pas scrapées par Prometheus
 
-1. Vérifier que le ServiceMonitor a le label `team: monitoring` :
+1. Vérifier que le ServiceMonitor a le label `lab: lab2` :
 ```bash
 kubectl get servicemonitor -n random-db postgres-pvc-monitor -o yaml | grep -A 5 labels
 ```
 
-2. Vérifier que Prometheus détecte le ServiceMonitor :
+2. Vérifier que le ConfigMap du sidecar existe :
 ```bash
-# Port-forward vers Prometheus
-kubectl port-forward -n default svc/prometheus-web 9090:9090
-# Aller sur http://localhost:9090/targets
+kubectl get configmap -n random-db pvc-monitor-script
 ```
 
 3. Vérifier que le service de métriques existe et pointe vers les pods :
 ```bash
 kubectl get svc -n random-db postgres-metrics
 kubectl get endpoints -n random-db postgres-metrics
+```
+
+4. Vérifier que Prometheus détecte le ServiceMonitor :
+```bash
+# Port-forward vers Prometheus
+kubectl port-forward -n default svc/prometheus 9090:9090
+# Aller sur http://localhost:9090/targets
 ```
 
 ### Les alertes ne se déclenchent pas
@@ -404,10 +445,10 @@ kubectl get prometheusrule -n random-db postgres-pvc-alerts
 # Dans Prometheus : http://localhost:9090/rules
 ```
 
-3. Vérifier que le label `prometheus: default` correspond à l'instance Prometheus :
+3. Vérifier que la PrometheusRule a le label `lab: lab2` (requis pour la sélection par Prometheus) :
 ```bash
 kubectl get prometheus -n default prometheus -o yaml | grep -A 2 labels
-kubectl get prometheusrule -n random-db postgres-pvc-alerts -o yaml | grep prometheus
+kubectl get prometheusrule -n random-db postgres-pvc-alerts -o yaml | grep -A 5 labels
 ```
 
 4. Tester manuellement une règle d'alerte :
@@ -418,14 +459,25 @@ pvc_usage_percent{namespace="random-db"} > 70
 
 ### Les métriques n'ont pas de label namespace
 
-1. Redémarrer le pod PostgreSQL pour recharger le sidecar avec la nouvelle configuration :
+1. Vérifier que le ConfigMap `pvc-monitor-script` existe et contient le script :
+```bash
+kubectl get configmap -n random-db pvc-monitor-script -o yaml
+```
+
+2. Redémarrer le pod PostgreSQL pour recharger le sidecar avec la nouvelle configuration :
 ```bash
 kubectl rollout restart statefulset/postgres -n random-db
 ```
 
-2. Vérifier que la variable d'environnement NAMESPACE est définie :
+3. Vérifier que la variable d'environnement NAMESPACE est définie :
 ```bash
 kubectl exec -n random-db postgres-0 -c pvc-monitor -- env | grep NAMESPACE
+```
+
+4. Vérifier que le sidecar expose les métriques :
+```bash
+kubectl port-forward -n random-db postgres-0 9091:9090
+curl http://localhost:9091/metrics
 ```
 
 ---

@@ -1,0 +1,48 @@
+---
+# Installation de l'OpenTelemetry Operator
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opentelemetry-operator-system
+  labels:
+    app: opentelemetry-operator
+
+---
+# Installation via Helm recommandée, mais voici les manifests de base
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opentelemetry-operator
+  namespace: opentelemetry-operator-system
+  labels:
+    app: opentelemetry-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opentelemetry-operator
+  template:
+    metadata:
+      labels:
+        app: opentelemetry-operator
+    spec:
+      serviceAccountName: opentelemetry-operator
+      containers:
+      - name: manager
+        image: ghcr.io/open-telemetry/opentelemetry-operator/opentelemetry-operator:latest
+        command:
+        - /manager
+        args:
+        - --zap-log-level=info
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+---
+# Note: Pour une installation complète, utiliser:
+# kubectl apply -f https://github.com/open-telemetry/opentelemetry-operator/releases/latest/download/opentelemetry-operator.yaml
+

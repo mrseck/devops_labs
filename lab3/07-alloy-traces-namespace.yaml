@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: alloy-traces
+  labels:
+    app: monitoring
+    component: collector
+    env: production
+  annotations:
+    description: "Alloy traces collector for OpenTelemetry"
+    contact: "platform-team@random.com"
+

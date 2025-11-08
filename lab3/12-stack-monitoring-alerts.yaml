@@ -1,0 +1,99 @@
+---
+# PrometheusRules pour alertes sur la stack de monitoring
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: monitoring-stack-alerts
+  namespace: monitoring
+  labels:
+    app: monitoring
+    component: alerts
+spec:
+  groups:
+  - name: loki
+    interval: 30s
+    rules:
+    - alert: LokiIngesterUnhealthy
+      expr: loki_ingester_ring_members{state="Unhealthy"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Loki ingester unhealthy"
+        description: "Loki ingester {{ $labels.instance }} is unhealthy"
+    
+    - alert: LokiIngestionRateHigh
+      expr: rate(loki_distributor_lines_received_total[5m]) > 100000
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Loki ingestion rate high"
+        description: "Loki ingestion rate is {{ $value }} lines/sec"
+  
+  - name: mimir
+    interval: 30s
+    rules:
+    - alert: MimirCompactionFailing
+      expr: mimir_compactor_compaction_failures_total > 0
+      for: 10m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Mimir compaction failing"
+        description: "Mimir compactor has {{ $value }} failures"
+    
+    - alert: MimirIngesterUnhealthy
+      expr: mimir_ingester_ring_members{state="Unhealthy"} > 0
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Mimir ingester unhealthy"
+        description: "Mimir ingester {{ $labels.instance }} is unhealthy"
+  
+  - name: tempo
+    interval: 30s
+    rules:
+    - alert: TempoDistributorOverloaded
+      expr: rate(tempo_distributor_spans_received_total[5m]) > 100000
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Tempo distributor overloaded"
+        description: "Tempo distributor receiving {{ $value }} spans/sec"
+  
+  - name: minio
+    interval: 30s
+    rules:
+    - alert: MinIOStorageHigh
+      expr: minio_disk_usage_percent > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "MinIO storage usage high"
+        description: "MinIO storage is {{ $value }}% full"
+    
+    - alert: MinIOStorageCritical
+      expr: minio_disk_usage_percent > 95
+      for: 2m
+      labels:
+        severity: critical
+      annotations:
+        summary: "MinIO storage critical"
+        description: "MinIO storage is {{ $value }}% full"
+  
+  - name: alloy
+    interval: 30s
+    rules:
+    - alert: AlloyRemoteWriteErrors
+      expr: rate(alloy_remote_write_errors_total[5m]) > 0
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Alloy remote write errors"
+        description: "Alloy {{ $labels.instance }} has {{ $value }} remote write errors/sec"
+

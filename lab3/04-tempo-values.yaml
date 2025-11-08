@@ -1,0 +1,101 @@
+# Values pour Helm chart tempo-distributed
+tempo:
+  # Stockage S3
+  storage:
+    trace:
+      backend: s3
+      s3:
+        endpoint: minio.minio.svc.cluster.local:9000
+        bucket: tempo-data
+        access_key: minioadmin
+        secret_key: minioadmin123!
+        insecure: true
+        forcepathstyle: true
+  
+  # Rétention
+  retention_period: 720h  # 30 jours
+  
+  # Compaction
+  compactor:
+    retention: 720h
+  
+  # Génération de métriques depuis traces
+  metricsGenerator:
+    enabled: true
+    replicas: 1
+    registry:
+      externalLabels:
+        source: tempo
+    storage:
+      path: /var/tempo/generator/wal
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+
+# Composants Tempo
+distributor:
+  replicas: 2
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+ingester:
+  replicas: 3
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+
+querier:
+  replicas: 2
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+
+queryFrontend:
+  replicas: 1
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+
+compactor:
+  replicas: 1
+  resources:
+    requests:
+      memory: 1Gi
+      cpu: 500m
+    limits:
+      memory: 2Gi
+      cpu: 1000m
+
+# Protocoles supportés
+# OTLP gRPC: 4317
+# OTLP HTTP: 4318
+# Jaeger: 14268
+# Zipkin: 9411
+
+# Service Monitor
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+
