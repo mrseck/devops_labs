@@ -207,5 +207,5 @@ Ce projet est fourni à des fins éducatives.
 ---
 
 **Version :** 1.0  
-**Dernière mise à jour :** 2024-01-15
+**Dernière mise à jour :** 2025-11-8
 
